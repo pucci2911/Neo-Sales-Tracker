@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEO — Sales Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --green: #00ff88;
+    --yellow: #ffd600;
+    --red: #ff4444;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 40px; height: 40px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #000; }
+  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: 0.05em; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.15em; text-transform: uppercase; }
+
+  /* Search Recipe */
+  .search-recipe { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+  .recipe-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .recipe-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+  .recipe-body { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: none; }
+  .recipe-body.open { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .recipe-group-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
+  .recipe-tags { display: flex; flex-direction: column; gap: 5px; }
+  .recipe-tag { background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .recipe-tag span { color: var(--muted); }
+  .recipe-tag strong { color: var(--accent); }
+  .recipe-tag.green strong { color: var(--green); }
+  .recipe-note { grid-column: 1/-1; background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.12); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat-num { font-size: 28px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* Cards */
+  .leads-grid { display: flex; flex-direction: column; gap: 14px; }
+  .lead-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+  .lead-card:hover { border-color: rgba(0,229,255,0.25); }
+  .lead-card.status-new { border-left: 3px solid var(--accent); }
+  .lead-card.status-contacted { border-left: 3px solid var(--yellow); }
+  .lead-card.status-replied { border-left: 3px solid var(--green); }
+  .lead-card.status-qualified { border-left: 3px solid var(--accent2); }
+  .lead-card.status-pass { border-left: 3px solid var(--muted); }
+  .lead-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; user-select: none; }
+  .lead-main { display: flex; align-items: center; gap: 14px; flex: 1; }
+  .lead-avatar { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; color: white; flex-shrink: 0; }
+  .lead-name { font-size: 15px; font-weight: 700; }
+  .lead-role { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .lead-meta { display: flex; align-items: center; gap: 10px; }
+  .status-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .status-new .status-badge { background: rgba(0,229,255,0.15); color: var(--accent); }
+  .status-contacted .status-badge { background: rgba(255,214,0,0.15); color: var(--yellow); }
+  .status-replied .status-badge { background: rgba(0,255,136,0.15); color: var(--green); }
+  .status-qualified .status-badge { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .status-pass .status-badge { background: rgba(107,107,128,0.15); color: var(--muted); }
+  .priority-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; }
+  .p-Aplus { background: rgba(255,68,68,0.15); color: #ff6b6b; }
+  .p-A { background: rgba(0,229,255,0.1); color: var(--accent); }
+  .p-B { background: rgba(255,214,0,0.1); color: var(--yellow); }
+  .expand-icon { color: var(--muted); font-size: 16px; margin-left: 10px; transition: transform 0.2s; }
+  .lead-card.expanded .expand-icon { transform: rotate(180deg); }
+  .lead-body { display: none; padding: 20px; border-top: 1px solid var(--border); }
+  .lead-card.expanded .lead-body { display: block; }
+  .lead-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+  .info-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+  .info-value { font-size: 13px; line-height: 1.5; }
+  .messages-tabs { display: flex; gap: 4px; margin-bottom: 10px; background: var(--surface2); padding: 4px; border-radius: 8px; width: fit-content; }
+  .msg-tab { padding: 5px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'JetBrains Mono', monospace; color: var(--muted); border: none; background: none; transition: all 0.15s; }
+  .msg-tab.active { background: var(--accent); color: #000; }
+  .msg-content { display: none; }
+  .msg-content.active { display: block; }
+  .message-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 14px 14px 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; font-family: 'JetBrains Mono', monospace; position: relative; }
+  .copy-btn { position: absolute; top: 10px; right: 10px; background: var(--border); border: none; color: var(--muted); padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-family: 'JetBrains Mono', monospace; transition: all 0.15s; }
+  .copy-btn:hover { background: var(--accent); color: #000; }
+  .copy-btn.copied { background: var(--green); color: #000; }
+  .no-msg { color: var(--muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; padding: 6px 0; }
+  .lead-actions { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .action-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+  .status-btn { padding: 5px 11px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer; font-family: 'JetBrains Mono', monospace; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.15s; }
+  .status-btn:hover, .status-btn.active { border-color: var(--accent); color: var(--accent); }
+  .notes-area { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; resize: vertical; min-height: 56px; margin-top: 12px; outline: none; transition: border-color 0.2s; }
+  .notes-area:focus { border-color: var(--accent); }
+  @media(max-width:600px){ .stats{grid-template-columns:repeat(2,1fr)} .lead-body-grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">N</div>
+      <div>
+        <div class="logo-text">NEO</div>
+        <div class="logo-sub">Sales Intelligence · Share IT</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Search Recipe -->
+  <div class="search-recipe">
+    <div class="recipe-header" onclick="toggleRecipe()">
+      <div class="recipe-title">🔍 Sales Navigator — Search Recipe</div>
+      <span id="recipe-icon" style="color:var(--muted);font-size:13px">▾</span>
+    </div>
+    <div class="recipe-body" id="recipe-body">
+      <div>
+        <div class="recipe-group-label">Lead Filters</div>
+        <div class="recipe-tags">
+          <div class="recipe-tag"><span>Title: </span><strong>CTO · VP of Engineering · Director of IT</strong></div>
+          <div class="recipe-tag"><span>Seniority: </span><strong>Director · VP · C-Suite</strong></div>
+          <div class="recipe-tag"><span>Geography: </span><strong>United States</strong></div>
+          <div class="recipe-tag green"><strong>✓ Posted on LinkedIn — Last 30 days</strong></div>
+        </div>
+      </div>
+      <div>
+        <div class="recipe-group-label">Account Filters</div>
+        <div class="recipe-tags">
+          <div class="recipe-tag"><span>Industry: </span><strong>Hospital & Health Care · Mental Health Care</strong></div>
+          <div class="recipe-tag"><span>Headcount: </span><strong>201 – 5,000</strong></div>
+          <div class="recipe-tag"><span>HQ Location: </span><strong>United States</strong></div>
+        </div>
+      </div>
+      <div class="recipe-note">💡 Trenutno: ~142 rezultata · Fokus: US Healthcare CTO/IT Director profili</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total Leads</div></div>
+    <div class="stat"><div class="stat-num" id="stat-contacted" style="color:var(--yellow)">0</div><div class="stat-label">Contacted</div></div>
+    <div class="stat"><div class="stat-num" id="stat-replied" style="color:var(--green)">0</div><div class="stat-label">Replied</div></div>
+    <div class="stat"><div class="stat-num" id="stat-qualified" style="color:#a78bfa">0</div><div class="stat-label">Qualified</div></div>
+  </div>
+
+  <div class="leads-grid" id="leads-grid"></div>
+</div>
+
+<script>
+const leads = [
+  {
+    id: 'michael-burns', name: 'Michael Burns', role: 'IT Director', company: 'Acadia Healthcare',
+    industry: 'Behavioral Health', size: '23,500+ employees · 258 facilities', priority: 'A+', status: 'contacted',
+    icp: 'Largest standalone behavioral health company in US. Multi-location, HIPAA critical. Full-stack background (ASP.NET Core). Building internal platforms for 250+ facilities with a lean team. Posted about training budgets & bad software design — active pain signal.',
+    caseStudy: 'Internal Operations Platform + Hiring Automation (100/week → 150/day)',
+    msg1: `Michael — your piece on training budgets was sharp. "We're not training users, we're apologizing to them" — that one stuck. Managing software quality across 250+ facilities is a different problem entirely. I build software for healthcare. Would love to connect.`,
+    msg2: `Thanks for connecting, Michael.\n\nYour point about hiring being the first product experience is spot on — and very few orgs treat it that way.\n\nWe've been working with US behavioral health providers on scaling hiring + internal ops — one team went from ~100 candidates/week manually to ~150/day.\n\nWith Acadia operating at that scale, I imagine keeping delivery capacity aligned is a constant puzzle — is that something you're actively optimizing, or mostly stable internally?`,
+    notes: 'Prihvatio konekciju. Step 2 poslat. Nije video poruku jos.'
+  },
+  {
+    id: 'kevin-rhode', name: 'Kevin Rhode', role: 'Chief Information Officer', company: 'District Medical Group',
+    industry: 'Healthcare / Multi-specialty', size: '11+ locations · Maricopa County AZ', priority: 'A', status: 'contacted',
+    icp: 'CIO = budget owner and decision maker. Multi-location behavioral health inpatient centers. Non-profit = likely legacy systems. CHIME Outstanding Service Award 2025. 11 years in behavioral health nonprofit. Mission-driven leader.',
+    caseStudy: 'Internal Operations Platform + Hiring Automation',
+    msg1: `Kevin — saw your CHIME Opioid Task Force recognition. That kind of work doesn't make headlines but it matters enormously. I work in healthcare software development and deeply respect leaders who treat IT as a mission, not just a function. Would love to connect.`,
+    msg2: `Thanks for connecting, Kevin.\n\nI've spent some time looking at your background — 11 years at JFCS, now DMG, HIMSS Arizona, the Opioid Task Force work. It's clear you're not just running IT infrastructure. You're trying to make behavioral health organizations actually function for the people they serve.\n\nI'm Co-Owner at Share IT Solutions — custom software development company out of Serbia, 13 years in, with most of our work in US healthcare. We've built internal operations platforms, hiring automation systems, and clinical communication tools for multi-location behavioral health organizations.\n\nThe clients we work with best are the ones where the CIO sees technology as mission-critical infrastructure — not a cost center. That sounds like you.\n\nNot pushing for anything. Just curious — what's the biggest operational gap you're trying to close at DMG right now?`,
+    notes: 'Kontaktiran. Cekamo odgovor.'
+  },
+  {
+    id: 'arturo-peralta', name: 'Arturo Peralta', role: 'Director IT — Population Health, HIE & Interoperability', company: "St. Joseph's Health",
+    industry: 'Healthcare / Multi-specialty', size: "5,000+ employees · 65+ locations · NJ", priority: 'A', status: 'contacted',
+    icp: 'Interoperability + Digital Consumer Portal = custom dev territory. 65+ locations, HIPAA. CHCIO cert March 2026. NJ HIMSS Vice President. 13 years in St. Josephs. Telehealth, RPM, patient portal portfolio.',
+    caseStudy: 'Internal Operations Platform + PBS Telehealth',
+    msg1: `Arturo — congrats on the NJ HIMSS Gold Chapter recognition. Back-to-back is no accident. I work in healthcare software development focused on interoperability and digital health platforms. Your work at St. Joseph's caught my attention. Would love to connect.`,
+    msg2: `Thanks for connecting, Arturo.\n\nI've been following your work at St. Joseph's — founding an enterprise Population Health IT department, the NJHIN interoperability leadership, the patient engagement portfolio. That's not a job description, that's building infrastructure from scratch.\n\nI'm Co-Owner at Share IT Solutions — custom software development company out of Serbia, 13 years in, with deep focus on US healthcare. We've built telehealth platforms, patient portals, clinical communication tools, and interoperability integrations for multi-location health systems. HIPAA-compliant, Azure-based, .NET and React stack.\n\nThe organizations we partner with best are ones where the IT leader is ahead of the clinical and operational curve — not catching up to it. That sounds like where you are at St. Joseph's.\n\nNot pitching a product. Just curious — as you push further into FHIR and TEFCA alignment, where are the gaps that your current vendor ecosystem isn't covering?`,
+    notes: 'Kontaktiran. Cekamo odgovor.'
+  },
+  {
+    id: 'john-collins', name: 'John Collins', role: 'Chief Technology Officer', company: 'R3 Continuum',
+    industry: 'Behavioral Health / Mental Health Care', size: 'Mental Health Care · Minneapolis, MN', priority: 'A', status: 'new',
+    icp: 'Behavioral health CTO. HIPAA + HITRUST. Aktivno radi na EHR transformaciji, telehealth platformama, AI alatima i data analytics. .NET i Angular stack match. Opis uloge je lista Share IT case studija.',
+    caseStudy: 'PBS Telehealth + Internal Operations Platform + AIQ Clinical Communication',
+    msg1: `John — your work at R3 Continuum caught my attention. Behavioral health CTO driving EHR transformation, telehealth platforms, and AI tools — that's exactly the space we build in. Custom software for healthcare, HIPAA-compliant, .NET and Azure stack. Would love to connect.`,
+    msg2: `Thanks for connecting, John.\n\nYour role at R3 Continuum reads like a roadmap we know well — EHR and case management transformation, telehealth platforms, AI-driven tools, data analytics for clinical decision-making. All in a HIPAA and HITRUST environment.\n\nI'm Co-Owner at Share IT Solutions — custom software development company out of Serbia, 13 years in, focused almost entirely on US behavioral health and healthcare. We've built telehealth platforms with real-time video and HIPAA-compliant infrastructure, internal operations platforms that replaced fragmented systems across multi-location providers, and clinical communication tools embedded into healthcare workflows.\n\nOur stack is .NET, React, Azure — same direction you've worked in throughout your career.\n\nNot pitching a project. Just curious — as you push R3's digital transformation forward, where are the biggest gaps between what your current systems deliver and what the business actually needs?`,
+    notes: 'A lead. Dodati u tracker i kontaktirati.'
+  },
+  {
+    id: 'brandon-kofer', name: 'Brandon Kofer', role: 'Director of Information Technology', company: 'Brightside Health',
+    industry: 'Telehealth / Behavioral Health', size: 'Mental Health Care · San Francisco, CA', priority: 'B', status: 'new',
+    icp: 'Upravo promovisan na Director (mart 2026). Telehealth kompanija fokusirana na mental health. PBS Telehealth case study direktan hit. Operations IT profil — nije primary decision maker ali moze biti ulaz do CTO/VP Engineering.',
+    caseStudy: 'PBS Telehealth + PBS Live',
+    msg1: `Brandon — congrats on the Director promotion at Brightside Health. Expanding access to mental health care through telehealth is important work. I build custom software for behavioral health and telehealth companies. Would love to connect.`,
+    msg2: `Thanks for connecting, Brandon.\n\nCongrats again on the Director role — stepping into that seat at a telehealth company like Brightside is a real opportunity to shape how technology supports care delivery.\n\nI'm Co-Owner at Share IT Solutions — custom software development company out of Serbia, 13 years in, with a strong focus on US behavioral health and telehealth. We've built HIPAA-compliant telehealth platforms with real-time video, patient portals, and clinical communication tools for multi-location mental health providers.\n\nAs you settle into the Director role, I'm curious — is Brightside building most of its platform in-house, or are there areas where the engineering team is stretched thin and outside expertise would move things faster?`,
+    notes: 'B lead. Nije primary decision maker ali moze biti ulaz u kompaniju.'
+  },
+  {
+    id: 'adam-gold', name: 'Adam Gold', role: 'Associate CIO & CTO', company: 'Rady Childrens / CHOC Childrens',
+    industry: 'Pediatric Healthcare', size: '60+ engineers · $30M+ IT budget · Orange County CA', priority: 'A', status: 'contacted',
+    icp: 'CTO simultano u dva pediatric health sistema. AWS + Azure stack match. Vodio in-house custom development i telemedicine projekte. $30M+ IT budget. Misija-driven lider. Volontira sa decom.',
+    caseStudy: 'PBS Telehealth + AIQ Clinical Communication + Internal Operations Platform',
+    msg1: `Adam — your post about Read to a Child stuck with me. "Technology isn't the mission. People are the mission." That's exactly the mindset behind the healthcare software we build. CTO running pediatric systems at both Rady and CHOC caught my attention. Would love to connect.`,
+    msg2: `Thanks for connecting, Adam.\n\nYour background is rare — CTO across two pediatric health systems simultaneously, AWS and Azure environments, in-house custom development, telehealth and telemedicine initiatives. And the way you talk about technology as a means to mission, not the mission itself — that's the kind of leader we partner with best.\n\nI'm Co-Owner at Share IT Solutions — custom software development company out of Serbia, 13 years in, deep focus on US healthcare. We build HIPAA-compliant platforms — telehealth, clinical communication tools, internal operations systems, patient portals — on .NET, React, Azure and AWS.\n\nRunning IT across two major pediatric systems is a serious capacity challenge. Even with 60 engineers, there are always initiatives that need external expertise to move faster without sacrificing quality or compliance.\n\nNot pitching a specific project. Just curious — what's the one initiative at Rady or CHOC right now that's moving slower than you'd like?`,
+    notes: 'Prihvatio konekciju. Poslati Step 2!'
+  },
+  {
+    id: 'valerie-nielsen', name: 'Valerie Nielsen', role: 'VP / Division Director', company: 'Robert Half Technology',
+    industry: 'IT Staffing & Recruiting', size: '10,000+ employees - Los Angeles, CA', priority: 'B', status: 'new',
+    icp: 'Nije klijent za custom software. Ali VP u najvecoj IT staffing firmi - svakodnevno razgovara sa CTO/IT Directors koji trebaju dev kapacitet. Gateway ka LA trzistu. Partnership/referral potencijal.',
+    caseStudy: 'Staff Augmentation + Dedicated Teams - nearshore model',
+    msg1: `Valerie — you fill roles at $160-180K a head. I build teams in Serbia at a fraction of that, same timezone overlap, senior profiles. Figured you'd rather know we exist than not. Worth connecting.`,
+    msg2: `Thanks for connecting.
+
+Quick context — Share IT is a custom software dev company out of Serbia, 13 years in. We work with US companies that need to scale engineering capacity quickly — dedicated teams, staff aug, project-based. Nearshore pricing, Western timezone overlap, senior profiles.
+
+I imagine some of your clients come to you needing 2-3 engineers but the budget does not stretch to $170K per head. That is exactly where we fit.
+
+Worth a quick call sometime to see if there is overlap?`,
+    notes: 'Partnership/referral play. Nije direktan klijent ali zna sve IT direktore u LA.'
+  },
+  {
+    id: 'darrell-keeling', name: 'Dr. Darrell Keeling', role: 'Chief Technology Officer', company: 'Bronson Healthcare',
+    industry: 'Healthcare / Hospital System', size: '9,000+ employees · 100+ locations · SW Michigan', priority: 'A+', status: 'new',
+    icp: 'New CTO (Nov 2025 — 5 months). Fresh mandate, new budget. PhD in IT, 25+ years. Posts about telehealth, modernization, AI. Digital Health Most Wired 2025. 1 mutual connection = warm intro moguc.',
+    caseStudy: 'PBS Telehealth + Internal Operations Platform + AIQ Clinical Communication',
+    msg1: `Darrell — your post about the Gemba walk at Bronson Battle Creek resonated. "Innovation only works when the fundamentals are strong." That's exactly how we approach healthcare software development. We build HIPAA-compliant platforms for health systems — telehealth, clinical workflows, operations. Would love to connect.`,
+    msg2: `Thanks for connecting, Darrell.\n\nFive months into the CTO role at a 9,000-person health system with 100+ locations — that's a serious mandate. And from your posts, it's clear you're thinking about this the right way: stable infrastructure first, then innovation on top of it.\n\nI'm Co-Owner at Share IT Solutions — custom software development company out of Serbia, 13 years in, focused on US healthcare. We've built telehealth platforms, clinical communication tools, and internal operations systems for multi-location health systems. HIPAA-compliant, Azure and AWS, .NET and React stack.\n\nBronson was just recognized as a Digital Health Most Wired system for 2025. New CTOs in their first year are usually identifying where the gaps are between current state and where the organization needs to be in 3 years.\n\nNot pitching a specific project. Just curious — as you settle into the role, what's the one area where you feel the current technology infrastructure is limiting what the clinical teams can do?`,
+    notes: 'A+ lead. 1 mutual connection — iskoristiti za warm intro.'
+  }
+];
+
+function getInitials(name) { return name.replace('Dr. ','').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase(); }
+function escHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = leads.length;
+  document.getElementById('stat-contacted').textContent = leads.filter(l=>l.status==='contacted').length;
+  document.getElementById('stat-replied').textContent = leads.filter(l=>l.status==='replied').length;
+  document.getElementById('stat-qualified').textContent = leads.filter(l=>l.status==='qualified').length;
+}
+
+function renderLeads() {
+  const grid = document.getElementById('leads-grid');
+  const statusOrder = {new:0,contacted:1,replied:2,qualified:3,pass:4};
+  const priorityOrder = {'A+':0,'A':1,'B':2};
+  const sorted = [...leads].sort((a,b)=>{
+    const so=(statusOrder[a.status]||0)-(statusOrder[b.status]||0);
+    return so!==0?so:(priorityOrder[a.priority]||2)-(priorityOrder[b.priority]||2);
+  });
+  const statusLabels={new:'NEW',contacted:'CONTACTED',replied:'REPLIED',qualified:'QUALIFIED',pass:'PASS'};
+  grid.innerHTML = sorted.map(lead=>{
+    const pClass='p-'+lead.priority.replace('+','plus');
+    return `
+    <div class="lead-card status-${lead.status}" id="card-${lead.id}">
+      <div class="lead-header" onclick="toggleCard('${lead.id}')">
+        <div class="lead-main">
+          <div class="lead-avatar">${getInitials(lead.name)}</div>
+          <div>
+            <div class="lead-name">${lead.name}</div>
+            <div class="lead-role">${lead.role} · ${lead.company}</div>
+          </div>
+        </div>
+        <div class="lead-meta">
+          <span class="priority-badge ${pClass}">${lead.priority}</span>
+          <span class="status-badge">${statusLabels[lead.status]||lead.status}</span>
+          <span class="expand-icon">▾</span>
+        </div>
+      </div>
+      <div class="lead-body" id="body-${lead.id}">
+        <div class="lead-body-grid">
+          <div>
+            <div class="info-label">Industry / Size</div>
+            <div class="info-value">${lead.industry}<br><span style="color:var(--muted);font-size:12px">${lead.size}</span></div>
+          </div>
+          <div>
+            <div class="info-label">Case Study</div>
+            <div class="info-value">${lead.caseStudy||'—'}</div>
+          </div>
+          <div style="grid-column:1/-1">
+            <div class="info-label">ICP Match & Signals</div>
+            <div class="info-value">${lead.icp||'—'}</div>
+          </div>
+        </div>
+        <div>
+          <div class="info-label" style="margin-bottom:8px">📨 Messages</div>
+          <div class="messages-tabs">
+            <button class="msg-tab active" onclick="switchTab(event,'${lead.id}','step1')">Step 1 — Note</button>
+            <button class="msg-tab" onclick="switchTab(event,'${lead.id}','step2')">Step 2 — Follow-up</button>
+          </div>
+          <div class="msg-content active" id="tab-${lead.id}-step1">
+            ${lead.msg1?`<div class="message-box"><button class="copy-btn" onclick="copyMsg(event,'${lead.id}','msg1')">Copy</button>${escHtml(lead.msg1)}</div>`:`<div class="no-msg">No message yet.</div>`}
+          </div>
+          <div class="msg-content" id="tab-${lead.id}-step2">
+            ${lead.msg2?`<div class="message-box"><button class="copy-btn" onclick="copyMsg(event,'${lead.id}','msg2')">Copy</button>${escHtml(lead.msg2)}</div>`:`<div class="no-msg">No message yet.</div>`}
+          </div>
+        </div>
+        <div class="info-label" style="margin-top:14px;margin-bottom:4px">📝 Notes</div>
+        <textarea class="notes-area" readonly>${lead.notes||''}</textarea>
+        <div class="lead-actions">
+          <span class="action-label">Status:</span>
+          ${['new','contacted','replied','qualified','pass'].map(s=>
+            `<button class="status-btn ${lead.status===s?'active':''}" onclick="setStatus('${lead.id}','${s}')">${s}</button>`
+          ).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+function toggleCard(id) { document.getElementById('card-'+id).classList.toggle('expanded'); }
+
+function switchTab(e,leadId,tab) {
+  e.stopPropagation();
+  const body=document.getElementById('body-'+leadId);
+  body.querySelectorAll('.msg-tab').forEach(t=>t.classList.remove('active'));
+  body.querySelectorAll('.msg-content').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('tab-'+leadId+'-'+tab).classList.add('active');
+}
+
+function copyMsg(e,leadId,field) {
+  e.stopPropagation();
+  const lead=leads.find(l=>l.id===leadId);
+  navigator.clipboard.writeText(lead[field]).then(()=>{
+    e.target.textContent='Copied!'; e.target.classList.add('copied');
+    setTimeout(()=>{e.target.textContent='Copy';e.target.classList.remove('copied');},2000);
+  });
+}
+
+function setStatus(id,status) {
+  const lead=leads.find(l=>l.id===id);
+  if(lead){lead.status=status;renderLeads();}
+  setTimeout(()=>{const c=document.getElementById('card-'+id);if(c)c.classList.add('expanded');},10);
+}
+
+function toggleRecipe() {
+  const body=document.getElementById('recipe-body');
+  const icon=document.getElementById('recipe-icon');
+  body.classList.toggle('open');
+  icon.textContent=body.classList.contains('open')?'▴':'▾';
+}
+
+renderLeads();
+</script>
+</body>
+</html>
